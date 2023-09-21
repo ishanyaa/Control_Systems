@@ -1,0 +1,105 @@
+#Ishanya
+
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+import numpy as np 
+#import massParam as P
+
+# Physical parameters of the arm known to the controller
+m =   5# mass kg
+k =   3# spring constant Kg/s^2
+b =   0.5# damping coefficient Kg/s
+
+# parameters for animation
+length = 5.0
+width = 1.0
+
+# Initial Conditions
+z0 =   3# initial position of mass, m
+v0 =   0# initial velocity of mass m/s
+
+# Simulation Parameters
+t_start = 0 # Start time of simulation
+t_end =   10# End time of simulation
+Ts =   2# sample time for simulation
+t_plot =  0.01# the plotting and animation is updated at this rate
+
+
+class massAnimation:
+    '''
+        Create mass animation
+    '''
+    def _init_(self):
+        self.flagInit = True                  # Used to indicate initialization
+        self.fig, self.ax = plt.subplots()    # Initializes a figure and axes object
+        self.handle = []                      # Initializes a list object that will
+                                              # be used to contain handles to the
+                                              # patches and line objects.
+        self.length=length
+        self.width=width
+        plt.axis([-length-length/5, 2*length, -length, 2*length]) # Change the x,y axis limits
+        plt.plot([-length-length/5,2*length],[0,0],'k--')    # Draw track
+        plt.plot([-length, -length], [0, 2*width], 'k')  # Draw wall
+
+        # Draw mass is the main function that will call the functions:
+    def update(self, u):
+        # Process inputs to function
+        z = u[0][0]   # position of mass, m
+        self.drawWeight(z)
+        self.drawSpring(z)
+        # After each function has been called, initialization is over.
+        if self.flagInit == True:
+            self.flagInit = False
+
+    def drawWeight(self, z):
+        x = z-width/2.0  # x coordinate
+        y = 0.0      # y coordinate
+        xy = (x, y)     # Bottom left corner of rectangle
+        # When the class is initialized, a Rectangle patch object will be
+        # created and added to the axes. After initialization, the Rectangle
+        # patch object will only be updated.
+        if self.flagInit == True:
+            # Create the Rectangle patch and append its handle
+            # to the handle list
+            self.handle.append(mpatches.Rectangle(xy,
+                width, width, fc = 'blue', ec = 'black'))
+            self.ax.add_patch(self.handle[0]) # Add the patch to the axes
+        else:
+            self.handle[0].set_xy(xy)         # Update patch
+
+    def drawSpring(self, z):
+        X = [-self.length, z-self.width/2.0]  # X data points
+        Y = [self.width/2.0, self.width/2.0]  # Y data points
+        # When the class is initialized, a line object will be
+        # created and added to the axes. After initialization, the
+        # line object will only be updated.
+        if self.flagInit == True:
+            # Create the line object and append its handle
+            # to the handle list.
+            line, = self.ax.plot(X, Y, lw=1, c='black')
+            self.handle.append(line)
+        else:
+            self.handle[1].set_xdata(X)  # Update the line
+            self.handle[1].set_ydata(Y)
+            
+
+def position_at_time(t, z0):
+    zeta = b/(2*np.sqrt(m*k))
+    wn = np.sqrt(k/m)
+    wd = wn*(np.sqrt(1-(zeta)**2))
+    return z0*np.exp(-1*zeta*wn*t)*np.cos(wd*t)
+            
+plt.ion()
+#fig, ax = plt.subplots()
+#ax.set_aspect('equal')
+#ax.set_xlim(0,100)
+#ax.set_ylim(0,100)
+massani = massAnimation()
+massani.update([[position_at_time(0, 0)]])
+plt.pause(10)
+for i in range(100):
+    massani.update([[i*z0/100]])
+    plt.pause(0.01)
+for i in range(10000):
+    massani.update([[position_at_time(i, z0)]])
+    plt.pause(0.01)
